@@ -1,29 +1,20 @@
+import { getListingsByLocation } from "./locationData";
 import {
   VehicleRequest,
   Listing,
   SearchResult,
   PotentialSpot as PotentialListing,
 } from "./types";
-import listingsData from "./listings.json";
 
-const listings: Listing[] = listingsData as Listing[];
 const VEHICLE_WIDTH = 10;
-const listingsByLocation: Record<string, Listing[]> = {};
 
 function canFit(vehicle: VehicleRequest, listing: PotentialListing): boolean {
   return listing.remainingArea >= vehicle.length * VEHICLE_WIDTH;
 }
 
-export function initializeLocationListingsHashMap() {
-  listings.forEach((listing) => {
-    if (!listingsByLocation[listing.location_id]) {
-      listingsByLocation[listing.location_id] = [];
-    }
-    listingsByLocation[listing.location_id].push(listing);
-  });
-}
-
 export function search(vehicleRequests: VehicleRequest[]): SearchResult[] {
+  const listingsByLocation = getListingsByLocation();
+
   // FOR EVERY LOCATION, find the cheapest listing combination
   const results: SearchResult[] = [];
   for (const [locationId, locListings] of Object.entries(listingsByLocation)) {
