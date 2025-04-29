@@ -1,10 +1,17 @@
 {
   "name": "multi-vehicle-search",
+  "scripts": {
+    "start": "ts-node server.ts",
+    "debug": "node --inspect -r ts-node/register server.ts"
+  },
   "version": "1.0.0",
   "dependencies": {
-    "@vercel/node": "^2.15.10"
+    "@vercel/node": "^2.15.10",
+    "express": "^5.1.0"
   },
   "devDependencies": {
-    "typescript": "^5.4.3"
+    "@types/express": "^5.0.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
   }
 }

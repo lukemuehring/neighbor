@@ -16,3 +16,8 @@ export interface SearchResult {
   listing_ids: string[];
   total_price_in_cents: number;
 }
+
+export interface PotentialSpot {
+  listing: Listing;
+  remainingArea: number;
+}

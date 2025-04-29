@@ -1,18 +1,24 @@
-import { VehicleRequest, Listing, SearchResult } from "./types";
+import {
+  VehicleRequest,
+  Listing,
+  SearchResult,
+  PotentialSpot as PotentialListing,
+} from "./types";
 import listingsData from "./listings.json";
 
 const listings: Listing[] = listingsData as Listing[];
 const VEHICLE_WIDTH = 10;
 
-function canFit(vehicle: VehicleRequest, listing: Listing): boolean {
-  // Todo: I don't think this takes intoi account the quantity
-  return listing.length >= vehicle.length && listing.width >= VEHICLE_WIDTH;
+function canFit(vehicle: VehicleRequest, listing: PotentialListing): boolean {
+  return listing.remainingArea >= vehicle.length * VEHICLE_WIDTH;
 }
 
-export function search(vRequests: VehicleRequest[]): SearchResult[] {
-  // Create hashmap of location ID : list of available listings
-  const listingsByLocation: Record<string, Listing[]> = {};
+export function search(vehicleRequests: VehicleRequest[]): SearchResult[] {
+  // Create location hashmap: location_id -> listings
+  // TODO can create this just once on startup
+  let start = performance.now();
 
+  const listingsByLocation: Record<string, Listing[]> = {};
   listings.forEach((listing) => {
     if (!listingsByLocation[listing.location_id]) {
       listingsByLocation[listing.location_id] = [];
@@ -20,31 +26,57 @@ export function search(vRequests: VehicleRequest[]): SearchResult[] {
     listingsByLocation[listing.location_id].push(listing);
   });
 
-  const results: SearchResult[] = [];
+  let end = performance.now();
+  let elapsed = end - start; // in milliseconds, with sub-millisecond precision
+  console.log(`Elapsed time: ${elapsed.toFixed(3)} ms`);
 
-  // For every location...
+  // FOR EVERY LOCATION, find the cheapest listing combination
+  const results: SearchResult[] = [];
   for (const [locationId, locListings] of Object.entries(listingsByLocation)) {
-    let available = [...locListings];
-    let usedListings: Listing[] = [];
+    // Track available listings at current location with remaining space
+    let availableListings = locListings.map(
+      (listing) =>
+        ({
+          listing,
+          remainingArea: listing.length * listing.width,
+        } as PotentialListing)
+    );
+
+    let usedListings = new Map<string, Listing>(); // use Map to avoid duplicate IDs
     let totalPrice = 0;
     let success = true;
 
-    for (const vRequest of vRequests) {
-      for (let i = 0; i < vRequest.quantity; i++) {
-        // Find all the listings that can fit a single vehicle from this request
-        const fitting = available.filter((l) => canFit(vRequest, l));
+    for (const vehicleRequest of vehicleRequests) {
+      for (let i = 0; i < vehicleRequest.quantity; i++) {
+        // Find listings that can fit the current car request
+        const fitting = availableListings.filter((listing) =>
+          canFit(vehicleRequest, listing)
+        );
+
         if (fitting.length === 0) {
           success = false;
           break;
         }
 
-        // get listing with the cheapest price that fits the vehicle length (but there still could be multiple...)
+        // Pick the cheapest fitting listing
         const cheapest = fitting.reduce((a, b) =>
-          a.price_in_cents < b.price_in_cents ? a : b
+          a.listing.price_in_cents < b.listing.price_in_cents ? a : b
         );
-        usedListings.push(cheapest);
-        available = available.filter((l) => l.id !== cheapest.id);
-        totalPrice += cheapest.price_in_cents;
+
+        // Use this listing
+        let vehicleRequestArea = VEHICLE_WIDTH * vehicleRequest.length;
+        cheapest.remainingArea -= vehicleRequestArea;
+
+        usedListings.set(cheapest.listing.id, cheapest.listing);
+
+        // We add the price ONLY ONCE per listing (not per vehicle)
+        // So if this is the first time using this listing, add its price
+        if (
+          cheapest.remainingArea + vehicleRequestArea ===
+          cheapest.listing.length * cheapest.listing.width
+        ) {
+          totalPrice += cheapest.listing.price_in_cents;
+        }
       }
       if (!success) break;
     }
@@ -52,7 +84,7 @@ export function search(vRequests: VehicleRequest[]): SearchResult[] {
     if (success) {
       results.push({
         location_id: locationId,
-        listing_ids: usedListings.map((l) => l.id),
+        listing_ids: Array.from(usedListings.keys()), // only listing ids, no repeats
         total_price_in_cents: totalPrice,
       });
     }
