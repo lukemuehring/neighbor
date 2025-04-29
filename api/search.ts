@@ -2,12 +2,15 @@ import { VehicleRequest, Listing, SearchResult } from "./types";
 import listingsData from "./listings.json";
 
 const listings: Listing[] = listingsData as Listing[];
+const VEHICLE_WIDTH = 10;
 
 function canFit(vehicle: VehicleRequest, listing: Listing): boolean {
-  return listing.length >= vehicle.length && listing.width >= 10;
+  // Todo: I don't think this takes intoi account the quantity
+  return listing.length >= vehicle.length && listing.width >= VEHICLE_WIDTH;
 }
 
-export function search(vehicles: VehicleRequest[]): SearchResult[] {
+export function search(vRequests: VehicleRequest[]): SearchResult[] {
+  // Create hashmap of location ID : list of available listings
   const listingsByLocation: Record<string, Listing[]> = {};
 
   listings.forEach((listing) => {
@@ -19,19 +22,23 @@ export function search(vehicles: VehicleRequest[]): SearchResult[] {
 
   const results: SearchResult[] = [];
 
+  // For every location...
   for (const [locationId, locListings] of Object.entries(listingsByLocation)) {
     let available = [...locListings];
     let usedListings: Listing[] = [];
     let totalPrice = 0;
     let success = true;
 
-    for (const vehicle of vehicles) {
-      for (let i = 0; i < vehicle.quantity; i++) {
-        const fitting = available.filter((l) => canFit(vehicle, l));
+    for (const vRequest of vRequests) {
+      for (let i = 0; i < vRequest.quantity; i++) {
+        // Find all the listings that can fit a single vehicle from this request
+        const fitting = available.filter((l) => canFit(vRequest, l));
         if (fitting.length === 0) {
           success = false;
           break;
         }
+
+        // get listing with the cheapest price that fits the vehicle length (but there still could be multiple...)
         const cheapest = fitting.reduce((a, b) =>
           a.price_in_cents < b.price_in_cents ? a : b
         );
