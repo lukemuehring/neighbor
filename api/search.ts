@@ -8,28 +8,22 @@ import listingsData from "./listings.json";
 
 const listings: Listing[] = listingsData as Listing[];
 const VEHICLE_WIDTH = 10;
+const listingsByLocation: Record<string, Listing[]> = {};
 
 function canFit(vehicle: VehicleRequest, listing: PotentialListing): boolean {
   return listing.remainingArea >= vehicle.length * VEHICLE_WIDTH;
 }
 
-export function search(vehicleRequests: VehicleRequest[]): SearchResult[] {
-  // Create location hashmap: location_id -> listings
-  // TODO can create this just once on startup
-  let start = performance.now();
-
-  const listingsByLocation: Record<string, Listing[]> = {};
+export function initializeLocationListingsHashMap() {
   listings.forEach((listing) => {
     if (!listingsByLocation[listing.location_id]) {
       listingsByLocation[listing.location_id] = [];
     }
     listingsByLocation[listing.location_id].push(listing);
   });
+}
 
-  let end = performance.now();
-  let elapsed = end - start; // in milliseconds, with sub-millisecond precision
-  console.log(`Elapsed time: ${elapsed.toFixed(3)} ms`);
-
+export function search(vehicleRequests: VehicleRequest[]): SearchResult[] {
   // FOR EVERY LOCATION, find the cheapest listing combination
   const results: SearchResult[] = [];
   for (const [locationId, locListings] of Object.entries(listingsByLocation)) {

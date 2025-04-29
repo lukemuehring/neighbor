@@ -1,9 +1,11 @@
 import express from "express";
-import { search } from "./api/search";
+import { search, initializeLocationListingsHashMap } from "./api/search";
 import { VehicleRequest } from "./api/types";
 
 const app = express();
 const PORT = 3000;
+
+initializeLocationListingsHashMap();
 
 // This allows Express to parse JSON body
 app.use(express.json());
