@@ -24,10 +24,6 @@ export function initializeLocationListingsHashMap() {
 }
 
 export function search(vehicleRequests: VehicleRequest[]): SearchResult[] {
-  if (Object.keys(listingsByLocation).length === 0) {
-    initializeLocationListingsHashMap();
-  }
-
   // FOR EVERY LOCATION, find the cheapest listing combination
   const results: SearchResult[] = [];
   for (const [locationId, locListings] of Object.entries(listingsByLocation)) {
