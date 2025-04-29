@@ -1,0 +1,10 @@
+{
+  "name": "multi-vehicle-search",
+  "version": "1.0.0",
+  "dependencies": {
+    "@vercel/node": "^2.11.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.3"
+  }
+}
